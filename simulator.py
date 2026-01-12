@@ -44,7 +44,7 @@ class Robot:
         
     def apply_rotation(self, direction):
         if direction != 0:
-            self.angular_velocity += direction * self.rotation_step * 0.1
+            self.angular_velocity -= direction * self.rotation_step * 0.1
             self.angular_velocity = max(-2, min(2, self.angular_velocity))
         
         self.angle = (self.angle + self.angular_velocity) % 360
@@ -710,8 +710,6 @@ class RobotGladiators:
             
             if self.show_ui:
                 self.draw_full_ui()
-            else:
-                self.draw_minimal_ui()
         
         if 'Escape' in self.keys_pressed:
             self.root.quit()
