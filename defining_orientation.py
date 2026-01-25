@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import time
+import math
 
 # 0 50 120 255 255 206 - label
 # 180 0 0 255 255 255 - red
@@ -45,26 +46,18 @@ def calc_orientation(frame,red,green):
     cv2.line(frame, (0,red[1]),(640,red[1]), (128,128,255),5)
     cv2.line(frame, (green[0],green[1]),(green[0],green[1]), (128,255,128),10)
 
-    if green[0] >= red [0] and green[1] >= red[1]:
-        print("^")
-        print("|")
-    
-    elif green[0] >= red [0] and green[1] <= red[1]:
-        print("<----")
-    
-    elif green[0] <= red [0] and green[1] >= red[1]:
-        print("---->")
-    
-    elif green[0] <= red [0] and green[1] <= red[1]:
-        print("|")
-        print("v")
+    opposite_catheter = red[0] - green[0]
+    adjacent_catheter = red[1] - green[1]
+
+    angle = math.degrees(math.atan2(opposite_catheter,adjacent_catheter))
+    cv2.putText(frame, f"{angle}",(red[0]-30,red[1]-30),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255))
 
 while True:
     start = time.time()
     ret, frame = cap.read()
 
     filter = np.array([[0,50,120],[255,255,206]])
-    
+
     hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV_FULL)
     mask = cv2.inRange(hsv_frame, filter[0], filter[1])
     filter_frame = cv2.bitwise_or(frame,frame, mask=mask)
@@ -76,10 +69,10 @@ while True:
 
     calc_orientation(frame,red_xy,green_xy)
 
-    # cv2.imshow("filter_frame", filter_frame)
-    # cv2.imshow("red_frame", red_frame)
-    # cv2.imshow("green_frame", green_frame)
-    # cv2.imshow("frame", frame)
+    cv2.imshow("filter_frame", filter_frame)
+    cv2.imshow("red_frame", red_frame)
+    cv2.imshow("green_frame", green_frame)
+    cv2.imshow("frame", frame)
 
     print(f"{time.time() - start:.10f}")
 
