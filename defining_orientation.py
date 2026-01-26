@@ -25,41 +25,48 @@ def filter_green(frame):
 def calc_centroid(frame):
     moments = cv2.moments(frame,binaryImage=True)
 
-    # заменить на обработку что метка потеряна
     if moments["m00"]==0:
-        x = len(frame[0])//2
-        y = len(frame)//2
+        return None
     else:
         x = moments["m10"]//moments["m00"]
         y = moments["m01"]//moments["m00"]
-    
-    xy = (int(x),int(y))
-    return xy
+        xy = (int(x),int(y))
+        return xy
 
 def calc_orientation(frame,red,green):
-    cv2.line(frame, (red[0],0),(red[0],480), (128,128,255),5)
-    cv2.line(frame, (0,red[1]),(len(frame[0]),red[1]), (128,128,255),5)
-    cv2.line(frame, (green[0],green[1]),(green[0],green[1]), (128,255,128),10)
+    if red and green:
+        cv2.line(frame, (red[0],0),(red[0],480), (128,128,255),5)
+        cv2.line(frame, (0,red[1]),(len(frame[0]),red[1]), (128,128,255),5)
+        cv2.line(frame, (green[0],green[1]),(green[0],green[1]), (128,255,128),10)
 
-    opposite_catheter = red[0] - green[0]
-    adjacent_catheter = red[1] - green[1]
+        opposite_catheter = red[0] - green[0]
+        adjacent_catheter = red[1] - green[1]
 
-    angle = math.degrees(math.atan2(opposite_catheter,adjacent_catheter))
-    cv2.putText(frame, f"{angle}",(red[0]-30,red[1]-30),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255))
+        angle = math.degrees(math.atan2(opposite_catheter,adjacent_catheter))
+        cv2.putText(frame, f"{angle}",(red[0]-30,red[1]-30),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255))
 
-def stitching(frame1,frame2):
-    return np.concatenate([frame1,frame2], axis=1)
+def stitching(frames):
+    return np.concatenate([frames[f"{i}"] for i in range(len(frames))], axis=1)
+
+def init_camers(num_camers):
+    caps = []
+    for i in range(num_camers):
+        caps.append(cv2.VideoCapture(i, cv2.CAP_DSHOW))
+        caps[i].set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        caps[i].set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    return caps
 
 def main():
-    cap1 = cv2.VideoCapture(0)
-    cap2 = cv2.VideoCapture(1)
-
+    caps = init_camers(1)
+    frames = {}
     while True:
         start = time.time()
-        ret, frame1 = cap1.read()
-        ret, frame2 = cap2.read()
+        for i, cap in enumerate(caps):
+            _, frames[f"{i}"] = cap.read()
 
-        frame = stitching(frame1,frame2)
+        frame = stitching(frames)
+        # cv2.imwrite("frame.jpg",frame)
+        # input()
 
         filter = np.array([[0,50,120],[255,255,206]])
 
@@ -84,8 +91,8 @@ def main():
         if cv2.waitKey(1) == ord('q'):
             break
 
-    cap1.release()
-    cap2.release()
+    for cap in caps:
+        cap.release()
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
