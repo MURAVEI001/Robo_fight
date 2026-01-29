@@ -2,11 +2,23 @@ import cv2
 import numpy as np
 import time
 import math
+import socket
+import struct
+from ip import now_ip
+
+HOST = now_ip() #local host
+PORT = 3333 #port number
 
 # 0 50 120 255 255 206 - label
 # 180 0 0 255 255 255 - red
 # 0 0 0 50 255 255 - red
 # 50 0 0 120 255 255 - green
+
+def filter_hsv(frame):
+    filter = np.array([[0,50,120],[255,255,206]])
+    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV_FULL)
+    mask = cv2.inRange(hsv_frame, filter[0], filter[1])
+    return cv2.bitwise_or(frame,frame, mask=mask)
 
 def filter_red(frame):
     frame = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV_FULL)
@@ -26,9 +38,9 @@ def calc_centroid(frame):
     moments = cv2.moments(frame,binaryImage=True)
 
     if moments["m00"]==0:
-        return None
+        return (0,0)
     else:
-        x = moments["m10"]//moments["m00"]
+        x = moments["m10"]//moments["m00"]  
         y = moments["m01"]//moments["m00"]
         xy = (int(x),int(y))
         return xy
@@ -44,6 +56,7 @@ def calc_orientation(frame,red,green):
 
         angle = math.degrees(math.atan2(opposite_catheter,adjacent_catheter))
         cv2.putText(frame, f"{angle}",(red[0]-30,red[1]-30),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255))
+        return angle
 
 def stitching(frames):
     return np.concatenate([frames[f"{i}"] for i in range(len(frames))], axis=1)
@@ -56,34 +69,42 @@ def init_camers(num_camers):
         caps[i].set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
     return caps
 
+def send_data(HOST, PORT):
+    print("TCP Server is running...")
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        print("Socket created")
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
+        s.bind((HOST, PORT)) #привязка сокета к адресу и порту
+        print("Socket bind complete")
+        s.listen() #прослушивание входящих подключений
+        print("Socket is listening")
+        conn, addr = s.accept() #принятие входящего подключения
+        return conn, addr
+            
 def main():
     caps = init_camers(1)
     frames = {}
+    #conn, addr = send_data(HOST,PORT)
+    # print('Connected by', addr)
     while True:
         start = time.time()
         for i, cap in enumerate(caps):
             _, frames[f"{i}"] = cap.read()
 
         frame = stitching(frames)
-        # cv2.imwrite("frame.jpg",frame)
-        # input()
-
-        filter = np.array([[0,50,120],[255,255,206]])
-
-        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV_FULL)
-        mask = cv2.inRange(hsv_frame, filter[0], filter[1])
-        filter_frame = cv2.bitwise_or(frame,frame, mask=mask)
-
+        filter_frame = filter_hsv(frame)
         red_frame = filter_red(filter_frame)
         green_frame = filter_green(filter_frame)
         red_xy = calc_centroid(red_frame)
         green_xy = calc_centroid(green_frame)
+        angle = calc_orientation(frame,red_xy,green_xy)
 
-        calc_orientation(frame,red_xy,green_xy)
-
-        cv2.imshow("filter_frame", filter_frame)
-        cv2.imshow("red_frame", red_frame)
-        cv2.imshow("green_frame", green_frame)
+        data = struct.pack('5f', red_xy[0], red_xy[1], angle, 0, 0)  #упаковка данных в байты
+        #conn.send(data) #отправка данных клиенту
+        
+        # cv2.imshow("filter_frame", filter_frame)
+        # cv2.imshow("red_frame", red_frame)
+        # cv2.imshow("green_frame", green_frame)
         cv2.imshow("frame", frame)
 
         print(f"{time.time() - start:.4f}")
