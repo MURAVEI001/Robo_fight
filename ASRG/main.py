@@ -2,6 +2,7 @@ import cv2 as cv
 import time
 from camera_utils import getCap, getFrame
 from stitching_frame import getStitchedFrame
+from detect_label import detectLabelBlack
 from frame_filter import getHsvFrame, getRedFrame, getGreenFrame
 from calc_moments import getCentroid
 from calc_orientation import getAngle
@@ -18,16 +19,17 @@ def main():
         frameDict = getFrame(capList)            
 
         stitchedFrame = getStitchedFrame(frameDict)
+        croppedFrame = detectLabelBlack(stitchedFrame)
 
-        hsvFrame = getHsvFrame(stitchedFrame)
+        hsvFrame = getHsvFrame(croppedFrame)
         redFrame = getRedFrame(hsvFrame)
         greenFrame = getGreenFrame(hsvFrame)
         XY_red = getCentroid(redFrame)
         XY_green = getCentroid(greenFrame)
-        angle = getAngle(stitchedFrame,XY_red,XY_green)
+        angle = getAngle(croppedFrame,XY_red,XY_green)
         #print(f"{time.time() - start:.4}f"{time.time() - start:.4}")
         #sendData(conn, XY_red[0], XY_red[1], angle, 0, 0)
-        cv.imshow("frame", stitchedFrame)
+        cv.imshow("frame", croppedFrame)
 
         frame_count += 1
         

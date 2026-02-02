@@ -14,7 +14,7 @@ def main():
     cv2.createTrackbar("S_max","image",0,255,nothing)
     cv2.createTrackbar("V_max","image",0,255,nothing)
 
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("Cannot open camera")
         exit()
