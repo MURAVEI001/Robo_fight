@@ -65,8 +65,8 @@ def init_camers(num_camers):
     caps = []
     for i in range(num_camers):
         caps.append(cv2.VideoCapture(i, cv2.CAP_DSHOW))
-        caps[i].set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        caps[i].set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        caps[i].set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        caps[i].set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     return caps
 
 def send_data(HOST, PORT):
@@ -105,7 +105,7 @@ def main():
         # cv2.imshow("filter_frame", filter_frame)
         # cv2.imshow("red_frame", red_frame)
         # cv2.imshow("green_frame", green_frame)
-        cv2.imshow("frame", frame)
+        #cv2.imshow("frame", frame)
 
         print(f"{time.time() - start:.4f}")
 
