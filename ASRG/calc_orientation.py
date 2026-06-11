@@ -12,4 +12,5 @@ def getAngle(frame,red_xy,green_xy):
 
         angle = math.degrees(math.atan2(opposite_catheter,adjacent_catheter))
         cv.putText(frame, f"{angle}",(red_xy[0]-30,red_xy[1]-30),cv.FONT_HERSHEY_SIMPLEX,1,(0,0,255))
+        cv.imshow("frame", frame)
         return angle

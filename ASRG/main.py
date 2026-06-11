@@ -1,51 +1,41 @@
 import cv2 as cv
 import time
 from camera_utils import getCap, getFrame
-from stitching_frame import getStitchedFrame
-from detect_label import detectLabelBlack
-from frame_filter import getHsvFrame, getRedFrame, getGreenFrame
-from calc_moments import getCentroid
-from calc_orientation import getAngle
-from server_utils import getIp,initServer,sendData
+from stitching_frame import joinedFrame
 
 def main():
-    ipHost = getIp()
-    port = 3333
-    #conn = initServer(ipHost,port)
-    capList = getCap(1)
-    prev_time = time.time()
-    frame_count = 0
+    # capList = getCap(2)
+    cap = cv.VideoCapture(r"ASRG/video2.mp4")
+    backSub = cv.createBackgroundSubtractorKNN()
     while True:
-        frameDict = getFrame(capList)            
+        start = time.time()
+        # frameDict = getFrame(capList)  
+        # joinFrame = joinedFrame(frameDict)
+        _, frame = cap.read()        
+        bin_frame = cv.cvtColor(frame,cv.COLOR_BGR2GRAY)
 
-        stitchedFrame = getStitchedFrame(frameDict)
-        croppedFrame = detectLabelBlack(stitchedFrame)
-
-        hsvFrame = getHsvFrame(croppedFrame)
-        redFrame = getRedFrame(hsvFrame)
-        greenFrame = getGreenFrame(hsvFrame)
-        XY_red = getCentroid(redFrame)
-        XY_green = getCentroid(greenFrame)
-        angle = getAngle(croppedFrame,XY_red,XY_green)
-        #print(f"{time.time() - start:.4}f"{time.time() - start:.4}")
-        #sendData(conn, XY_red[0], XY_red[1], angle, 0, 0)
-        cv.imshow("frame", croppedFrame)
-
-        frame_count += 1
+        figMsk = backSub.apply(bin_frame)
+        contours, hierarchy = cv.findContours(figMsk, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        frame_ct = cv.drawContours(frame, contours, -1, (0, 255, 0), 2)
+        retval, mask_thresh = cv.threshold( figMsk, 180, 255, cv.THRESH_BINARY)
+        kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (3, 3))
+        mask_eroded = cv.morphologyEx(mask_thresh, cv.MORPH_OPEN, kernel)
+        min_contour_area = 800  # Define your minimum area threshold
+        large_contours = [cnt for cnt in contours if cv.contourArea(cnt) > min_contour_area]
+        frame_out = frame.copy()
+        for cnt in large_contours:
+            x, y, w, h = cv.boundingRect(cnt)
+            frame_out = cv.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 200), 3)
         
-        curr_time = time.time()
-        if curr_time - prev_time >= 1.0:
-            fps = frame_count / (curr_time - prev_time)
-            print(f"FPS: {fps:.2f}")
-        
-            frame_count = 0
-            prev_time = curr_time
+        # отображаем результат
+        cv.imshow('Frame_final', frame_out)
+        print(f"{time.time() - start:.4f}")
 
-        if cv.waitKey(1) == ord('q'):
+        if cv.waitKey(30) == ord('q'):
             break
     
-    for cap in capList:
-        cap.release()
+    # for cap in capList:
+    #     cap.release()
     cv.destroyAllWindows()
 
 if __name__ == "__main__":
