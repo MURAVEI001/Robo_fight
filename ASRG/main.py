@@ -1,34 +1,39 @@
 import cv2 as cv
 import time
+import numpy as np
 from camera_utils import getCap, getFrame
 from stitching_frame import joinedFrame
 
 def main():
-    # capList = getCap(2)
-    cap = cv.VideoCapture(r"ASRG/video2.mp4")
-    backSub = cv.createBackgroundSubtractorKNN()
+    #capList = getCap(1)
+    #cap = cv.VideoCapture(r"D:\GitHub\Robo_fight\ASRG\video2.mp4")
+    cap = cv.VideoCapture(0, cv.CAP_DSHOW)
+    k = 0
+    frame_pre = np.zeros((1080, 1920), dtype=np.uint8)
+    
     while True:
         start = time.time()
-        # frameDict = getFrame(capList)  
-        # joinFrame = joinedFrame(frameDict)
-        _, frame = cap.read()        
-        bin_frame = cv.cvtColor(frame,cv.COLOR_BGR2GRAY)
-
-        figMsk = backSub.apply(bin_frame)
-        contours, hierarchy = cv.findContours(figMsk, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-        frame_ct = cv.drawContours(frame, contours, -1, (0, 255, 0), 2)
-        retval, mask_thresh = cv.threshold( figMsk, 180, 255, cv.THRESH_BINARY)
-        kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (3, 3))
-        mask_eroded = cv.morphologyEx(mask_thresh, cv.MORPH_OPEN, kernel)
-        min_contour_area = 800  # Define your minimum area threshold
-        large_contours = [cnt for cnt in contours if cv.contourArea(cnt) > min_contour_area]
-        frame_out = frame.copy()
-        for cnt in large_contours:
-            x, y, w, h = cv.boundingRect(cnt)
-            frame_out = cv.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 200), 3)
-        
-        # отображаем результат
-        cv.imshow('Frame_final', frame_out)
+        # frameDict = getFrame(capList)
+        # if len(capList) == 1:
+        #     joinFrame = frameDict["0"]
+        # else:
+        #     joinFrame = joinedFrame(frameDict)
+        _, joinFrame = cap.read()
+        binFrame = cv.cvtColor(joinFrame, cv.COLOR_BGR2GRAY)
+        filter_frame = cv.boxFilter(binFrame,  ddepth=-1, dst=binFrame, ksize=(3,3))
+        subFrame = cv.absdiff(filter_frame,frame_pre)
+        threshFrame = cv.threshold(subFrame,30.0, 255.0, cv.ADAPTIVE_THRESH_MEAN_C, dst=-1)
+        contours = cv.findContours(threshFrame[1],cv.RETR_EXTERNAL,cv.CHAIN_APPROX_TC89_L1)
+        try:
+            cv.drawContours(joinFrame,contours[0],-1,(0,0,255),thickness=5)
+        except:
+            pass
+        frame_pre = filter_frame.copy()
+        k +=1 
+        if k == 5:
+            #cv.imwrite(img=subFrame, filename="./image.jpg")
+            k = 0
+        cv.imshow("frame", joinFrame)
         print(f"{time.time() - start:.4f}")
 
         if cv.waitKey(30) == ord('q'):
