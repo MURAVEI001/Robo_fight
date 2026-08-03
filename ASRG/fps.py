@@ -1,6 +1,6 @@
 import time
 
-def getFPS(times,start):
+def showFPS(times,start):
     end = time.time() - start
     times.append(end)
     if len(times) == 30:
