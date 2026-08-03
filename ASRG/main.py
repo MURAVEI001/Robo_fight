@@ -3,6 +3,7 @@ import time
 import numpy as np
 from ASRG.aruco_utils import initDetector,detectAruco,calcAngle
 from ASRG.detection_utils import filterComponets, drawInfo, getROI, updateHistory
+from ASRG.fps import getFPS
 
 def main():
     cap = cv.VideoCapture(r"ASRG\2.mp4")
@@ -11,6 +12,8 @@ def main():
     last_frame = np.zeros_like(gray_frame, dtype=frame.dtype)
 
     detector = initDetector()
+
+    times = []
     while True:
         start = time.time()
         _, frame = cap.read()
@@ -41,7 +44,8 @@ def main():
             frame = drawInfo(frame, xySelf=xySelf, drawSelf=True)
 
         cv.imshow("frame", frame)
-        #print(f"{time.time() - start:.4f}")
+
+        getFPS(times,start)
 
         if cv.waitKey(30) == ord('q'):
             break
