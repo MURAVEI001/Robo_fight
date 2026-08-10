@@ -2,7 +2,7 @@ import cv2 as cv
 import time
 import numpy as np
 from ASRG.aruco_utils import initDetector,detectAruco,calcAngle
-from ASRG.detection_utils import filterComponets, drawInfo, getROI, updateHistory
+from ASRG.detection_utils import filterComponents, drawAngle, drawSelf
 from ASRG.fps import showFPS
 
 def main():
@@ -14,17 +14,17 @@ def main():
     detector = initDetector()
 
     times = []
+    angle = None
     while True:
         start = time.time()
         _, frame = cap.read()
-        aruco = False
+        aruco_flag = False
         corners, idx, rejected = detectAruco(detector,frame)
-        angle = None
         if not(idx is None):
             for i, id in enumerate(idx):
                 if id == 47 :
                     angle = int(calcAngle(corners[i]))
-                    aruco = True
+                    aruco_flag = True
         
         blur_frame = cv.GaussianBlur(frame,ksize=(9,9), sigmaX=0)
         gray_frame = cv.cvtColor(blur_frame, cv.COLOR_BGR2GRAY)
@@ -36,14 +36,14 @@ def main():
         num_labels, labels, stats, centroids = cv.connectedComponentsWithStats(
             motion, connectivity=8)
 
-        filtered_stats = filterComponets(stats, 4000)
+        filtered_stats = filterComponents(stats, 4000)
 
-        frame = drawInfo(frame, angle=angle, drawAngle=True)
+        frame = drawAngle(frame, angle)
         for stats in filtered_stats:
             pt1 = np.array([stats[0],stats[1]])
             pt2 = np.array([stats[0]+stats[2],stats[1]+stats[3]])
-            xySelf = np.array([pt1,pt2])
-            frame = drawInfo(frame, xySelf=xySelf, drawSelf=True)
+            self_position = np.array([pt1,pt2])
+            frame = drawSelf(frame, self_position)
 
         cv.imshow("frame", frame)
 
