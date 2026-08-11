@@ -11,7 +11,7 @@ def filterComponents(stats, threshold):
             filtered_stats.append(stat)
     return filtered_stats
 
-def getROI(frame,offset=0):
+def getROI(frame,box_points,offset=0):
     pass
 
 def drawAngle(frame,angle):
@@ -19,5 +19,8 @@ def drawAngle(frame,angle):
     return frame
 
 def drawSelf(frame,self_position):
-    frame = cv.rectangle(frame,pt1=self_position[0],pt2=self_position[1],color=(0,0,255),thickness=5)
+    frame = cv.line(frame, pt1=self_position[0],pt2=self_position[1],color=(0,0,255),thickness=3)
+    frame = cv.line(frame, pt1=self_position[1],pt2=self_position[2],color=(0,0,255),thickness=3)
+    frame = cv.line(frame, pt1=self_position[2],pt2=self_position[3],color=(0,0,255),thickness=3)
+    frame = cv.line(frame, pt1=self_position[3],pt2=self_position[0],color=(0,0,255),thickness=3)
     return frame
