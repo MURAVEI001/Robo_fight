@@ -5,5 +5,5 @@ def showFPS(times,start):
     times.append(end)
     if len(times) == 30:
         fps = sum(x for x in times)
-        times.pop()
-        print(f"{fps:.3f}")
+        times.pop(0)
+        print(f"{(fps*100):.0f}%", f"{end:.3f}")

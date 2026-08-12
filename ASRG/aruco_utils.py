@@ -13,7 +13,7 @@ def detectAruco(detector, frame):
 
 def getPointsMarker(corners):
     corners = corners.squeeze()
-    points = corners.astype(np.uint32)
+    points = corners.astype(np.int32)
     return points
 
 def calcAngle(corners):
