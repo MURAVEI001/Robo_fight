@@ -12,7 +12,7 @@ from ASRG.fps import showFPS
 # 4 ПОЛОЖЕНИЕ ПРОТИВНИКА
 
 def main():
-    cap = cv.VideoCapture(r"ASRG\4.mp4")
+    cap = cv.VideoCapture(r"ASRG/4.mp4")
 
     detector = initDetector()
 
@@ -24,45 +24,55 @@ def main():
         start = time.time()
 
         _, frame = cap.read()
+        h, w, c = frame.shape
+        frame = frame[40:h-822, 120:w-306]
         gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
         if prev_frame is None:
             prev_frame = np.zeros_like(gray_frame, dtype=gray_frame.dtype)
 
-        aruco_flag = False
-        corners, ids, rejected = detectAruco(detector, frame)
-        if not(ids is None):
-            for i, id in enumerate(ids):
-                if id == 47 :
-                    angle = calcAngle(corners[i]) # УГОЛ ПОВОРОТА
-                    points_self = getPointsMarker(corners[i])
-                    aruco_flag = True
-                    break
+        motion, prev_frame = cycleDetection(gray_frame, prev_frame)
+        num_labels, labels, stats, centroids = cv.connectedComponentsWithStats(
+            motion, connectivity=8)
+        filtered_stats = filterComponents(stats, 500)
+        for stats in filtered_stats:
+            pt1 = np.array([stats[0],stats[1]])
+            pt2 = np.array([stats[0]+stats[2], stats[1]+stats[3]])
+            position = np.array([pt1,pt2])
+            frame = drawBox(frame, position)
 
-        if aruco_flag:
-            centr_point = getCentr(points_self) # ПОЛОЖЕНИЕ АРУКО
-            # ROI = getROI(centr_point, offset=100)
-            # cv.rectangle(frame, pt1=(ROI[0]), pt2=(ROI[1]), color=(0,255,0), thickness=9)
+        # aruco_flag = False
+        # corners, ids, rejected = detectAruco(detector, frame)
+        # if not(ids is None):
+        #     for i, id in enumerate(ids):
+        #         if id == 47 :
+        #             angle = calcAngle(corners[i]) # УГОЛ ПОВОРОТА
+        #             points_self = getPointsMarker(corners[i])
+        #             aruco_flag = True
+        #             centr_point = getCentr(points_self) # ПОЛОЖЕНИЕ АРУКО
+        #             cv.line(frame,pt1=centr_point,pt2=centr_point,color=(0,0,255),thickness=20)
+        #             break
 
-            #frame = frame[ROI[0][1]:ROI[1][1], ROI[0][0]:ROI[1][0]]
+        # if aruco_flag:
+        #     centr_point = getCentr(points_self) # ПОЛОЖЕНИЕ АРУКО
 
-            motion, prev_frame = cycleDetection(gray_frame, prev_frame)
+        #     motion, prev_frame = cycleDetection(gray_frame, prev_frame)
 
-            num_labels, labels, stats, centroids = cv.connectedComponentsWithStats(
-                motion, connectivity=4)
+        #     num_labels, labels, stats, centroids = cv.connectedComponentsWithStats(
+        #         motion, connectivity=8)
 
-            filtered_stats = filterComponents(stats, 500)
+        #     filtered_stats = filterComponents(stats, 500)
 
-        #frame = drawAngle(frame, angle)
-            for stats in filtered_stats:
-                pt1 = np.array([stats[0],stats[1]])
-                pt2 = np.array([stats[0]+stats[2],stats[1]+stats[3]])
-                enemy_position = np.array([pt1,pt2])
-                frame = drawBox(frame, enemy_position)
+        # #frame = drawAngle(frame, angle)
+        #     for stats in filtered_stats:
+        #         pt1 = np.array([stats[0],stats[1]])
+        #         pt2 = np.array([stats[0]+stats[2],stats[1]+stats[3]])
+        #         enemy_position = np.array([pt1,pt2])
+        #         frame = drawBox(frame, enemy_position)
 
-            cv.imshow("frame", frame)
-            cv.imshow("frame1", motion)
+        cv.imshow("frame", frame)
+        cv.imshow("frame1", motion)
 
-            showFPS(times,start)
+        showFPS(times,start)
 
         if cv.waitKey(30) == ord('q'):
             break

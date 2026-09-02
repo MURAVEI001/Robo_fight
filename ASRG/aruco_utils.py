@@ -4,6 +4,15 @@ from cv2 import aruco
 def initDetector():
     dictionary = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
     parameters = aruco.DetectorParameters()
+    parameters.adaptiveThreshWinSizeMin = 3
+    parameters.adaptiveThreshWinSizeMax = 31
+    parameters.adaptiveThreshWinSizeStep = 4
+    parameters.minMarkerPerimeterRate = 0.03
+    parameters.maxMarkerPerimeterRate = 0.5
+    parameters.polygonalApproxAccuracyRate = 0.05
+    parameters.minOtsuStdDev = 0.0
+    parameters.adaptiveThreshConstant = 7
+
     detector = aruco.ArucoDetector(dictionary, parameters)
     return detector
 
